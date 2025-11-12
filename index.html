@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Marte Not Found — 404</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #0b0d10;
+        font-family: "Space Grotesk", sans-serif;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .poster {
+        background: #bfbfbf;
+        border-radius: 20px;
+        padding: 40px;
+        max-width: 700px;
+        width: 90%;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      h1 {
+        font-family: monospace;
+        font-size: clamp(16px, 2.2vw, 22px);
+        line-height: 1.8;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin-bottom: 30px;
+      }
+
+      h1 span {
+        color: #ff4a38;
+      }
+
+      .window {
+        background: #000;
+        border-radius: 10px;
+        height: 300px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .pixel-404 {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: monospace;
+        font-size: clamp(24px, 4vw, 36px);
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255, 74, 56, 0.8);
+      }
+
+      .portal {
+        position: absolute;
+        left: 5%;
+        right: 5%;
+        bottom: 15%;
+        height: 25%;
+        border-radius: 50%/45%;
+        background: linear-gradient(180deg, #b6ffbd, #8cc0ff, #8746b9, #ff4a38);
+        filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.4));
+      }
+
+      canvas#game {
+        margin-top: 25px;
+        width: 100%;
+        height: 140px;
+        background: #cfcfcf;
+        border-radius: 10px;
+        display: block;
+      }
+
+      canvas#space {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <main class="poster">
+      <h1>Ni <span>ChatGPT</span><br />encontró vida<br />en Marte</h1>
+
+      <div class="window">
+        <div class="pixel-404">ERROR 404</div>
+        <div class="portal"></div>
+      </div>
+
+      <canvas id="game"></canvas>
+    </main>
+
+    <canvas id="space"></canvas>
+
+    <script>
+      // === Fondo de estrellas ===
+      const bg = document.getElementById("space");
+      const bctx = bg.getContext("2d");
+      let stars = [];
+
+      function resizeStars() {
+        bg.width = innerWidth;
+        bg.height = innerHeight;
+        stars = Array.from({ length: 150 }, () => ({
+          x: Math.random() * innerWidth,
+          y: Math.random() * innerHeight,
+          r: Math.random() * 1.5 + 0.3,
+          s: Math.random() * 0.7 + 0.2,
+        }));
+      }
+
+      function drawStars() {
+        bctx.clearRect(0, 0, innerWidth, innerHeight);
+        bctx.fillStyle = "white";
+        for (const s of stars) {
+          bctx.beginPath();
+          bctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          bctx.fill();
+          s.x -= s.s;
+          if (s.x < 0) s.x = innerWidth;
+        }
+        requestAnimationFrame(drawStars);
+      }
+
+      resizeStars();
+      drawStars();
+      addEventListener("resize", resizeStars);
+
+      // === Minijuego ===
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+
+      function resizeGame() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+      }
+      resizeGame();
+      addEventListener("resize", resizeGame);
+
+      const player = { x: 30, y: 60, vy: 0, w: 26, h: 32, onGround: true };
+      const state = { speed: 2.3, gravity: 0.45, tick: 0, running: true };
+      let obstacles = [];
+
+      function spawn() {
+        const gap = 110 + Math.random() * 40;
+        const last = obstacles.length
+          ? obstacles[obstacles.length - 1].x
+          : canvas.width;
+        const h = 18 + Math.random() * 20;
+        obstacles.push({ x: last + gap, w: 16 + Math.random() * 10, h });
+      }
+
+      function jump() {
+        if (player.onGround) {
+          player.vy = -9.5;
+          player.onGround = false;
+        }
+      }
+      addEventListener("keydown", (e) => e.code === "Space" && jump());
+      canvas.addEventListener("pointerdown", jump);
+
+      function update() {
+        if (!state.running) return;
+        state.tick++;
+        if (state.tick % 65 === 0) spawn();
+
+        player.vy += state.gravity;
+        player.y += player.vy;
+        const ground = canvas.height - 10;
+        if (player.y + player.h >= ground) {
+          player.y = ground - player.h;
+          player.vy = 0;
+          player.onGround = true;
+        }
+
+        for (const o of obstacles) o.x -= state.speed;
+        obstacles = obstacles.filter((o) => o.x + o.w > 0);
+        state.speed += 0.0004;
+
+        for (const o of obstacles) {
+          if (
+            player.x < o.x + o.w &&
+            player.x + player.w > o.x &&
+            player.y + player.h > canvas.height - o.h
+          ) {
+            gameOver();
+          }
+        }
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const h = canvas.height;
+        ctx.fillStyle = "#aaa";
+        ctx.fillRect(0, h - 8, canvas.width, 8);
+        ctx.fillStyle = "#555";
+        for (const o of obstacles) ctx.fillRect(o.x, h - o.h - 8, o.w, o.h);
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(player.x + 12, player.y + 10, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ff4a38";
+        ctx.fillRect(player.x + 4, player.y + 26, 16, 4);
+      }
+
+      function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      function gameOver() {
+        state.running = false;
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#fff";
+        ctx.textAlign = "center";
+        ctx.font = "14px monospace";
+        ctx.fillText("404 NOT FOUND", canvas.width / 2, canvas.height / 2 - 10);
+        ctx.fillText(
+          "Click o Space para reiniciar",
+          canvas.width / 2,
+          canvas.height / 2 + 15
+        );
+
+        function restart() {
+          state.running = true;
+          state.speed = 2.3;
+          obstacles = [];
+          player.y = 60;
+          player.vy = 0;
+          removeEventListener("keydown", onKey);
+          canvas.removeEventListener("pointerdown", restart);
+        }
+        function onKey(e) {
+          if (e.code === "Space") restart();
+        }
+        addEventListener("keydown", onKey);
+        canvas.addEventListener("pointerdown", restart);
+      }
+
+      loop();
+    </script>
+  </body>
+</html>
