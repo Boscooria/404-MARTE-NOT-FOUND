@@ -74,7 +74,7 @@ Una metáfora contemporánea sobre la búsqueda de sentido en la era de la intel
 
 Repositorio
 El proyecto se encuentra disponible públicamente en GitHub bajo el nombre:  
-**`marte-not-found-404`**
+**404-MARTE-NOT-FOUND**
 
 ---
 
