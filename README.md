@@ -77,5 +77,9 @@ El proyecto se encuentra disponible públicamente en GitHub bajo el nombre:
 **404-MARTE-NOT-FOUND**
 
 ---
+Link web
+https://boscooria.github.io/404-MARTE-NOT-FOUND/
+
+---
 
 © 2025 — Proyecto académico para la Hackathon “404s to Mars”.
